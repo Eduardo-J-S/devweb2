@@ -194,8 +194,6 @@ urlpatterns = [
 ]
 ```
 
-O Django Admin é uma ferramenta para gerenciar dados de forma visual. Ao registrar o modelo `Evento`, podemos criar, editar e excluir eventos diretamente no painel administrativo, o que é útil durante o desenvolvimento.
-
 ## 7. Atualizar o Admin
 Adicione a funcionalidade de gerenciamento de eventos no Django Admin.
 
@@ -208,6 +206,8 @@ from .models import Evento
 admin.site.register(Evento)
 ```
 
+O Django Admin é uma ferramenta para gerenciar dados de forma visual. Ao registrar o modelo `Evento`, podemos criar, editar e excluir eventos diretamente no painel administrativo, o que é útil durante o desenvolvimento.
+
 ## 8. Iniciar o servidor:
 - Garanta que todas as dependências estão instaladas: Certifique-se de que o ambiente virtual está ativado e os pacotes necessários estão instalados:
 `pip install -r requirements.txt`
@@ -217,11 +217,11 @@ admin.site.register(Evento)
 
 Acesse a aplicação no navegador: O servidor será iniciado no endereço http://127.0.0.1:8000/. A partir daí, você pode navegar pelas rotas configuradas.
 
-Listar Projetos: `http://127.0.0.1:8000/projeto/`
+Listar Projetos: http://127.0.0.1:8000/projeto/
 
-Listar Eventos de um Projeto: `http://127.0.0.1:8000/eventos/<projeto_id>/eventos/`
+Listar Eventos de um Projeto: http://127.0.0.1:8000/eventos/<projeto_id>/eventos/
 
-Selecionar projeto para adicionar evento: `http://127.0.0.1:8000/eventos/selecionar/`
+Selecionar projeto para adicionar evento: http://127.0.0.1:8000/eventos/selecionar/
 
 # Tarefas em Aberto
 
