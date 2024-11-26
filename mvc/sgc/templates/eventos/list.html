@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Eventos de {{ projeto.titulo }}{% endblock %}
+{% block content %}
+<h1>Eventos de "{{ projeto.titulo }}"</h1>
+<ul>
+    {% for evento in eventos %}
+        <li>
+            <strong>{{ evento.titulo }}</strong>: {{ evento.data|date:"d/m/Y H:i" }}
+            <p>{{ evento.descricao }}</p>
+        </li>
+    {% endfor %}
+</ul>
+<a href="{% url 'criar_evento' projeto.id %}" class="btn btn-primary">Adicionar Evento</a>
+<a href="{% url 'listar' %}">Voltar para Projetos</a>
+{% endblock %}
