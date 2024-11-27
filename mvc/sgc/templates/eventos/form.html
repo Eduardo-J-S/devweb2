@@ -1,16 +1,42 @@
 {% extends 'base.html' %}
-{% block title %}Criar Evento para {{ projeto.titulo }}{% endblock %}
+{% block title %}Criar Evento{% endblock %}
 {% block content %}
-<h1>Criar Evento para "{{ projeto.titulo }}"</h1>
-<form method="post">
-    {% csrf_token %}
-    <label for="titulo">Título:</label>
-    <input type="text" name="titulo" id="titulo" required>
-    <label for="descricao">Descrição:</label>
-    <textarea name="descricao" id="descricao"></textarea>
-    <label for="data">Data:</label>
-    <input type="datetime-local" name="data" id="data" required>
-    <button type="submit" class="btn btn-primary">Salvar</button>
-</form>
-<a href="{% url 'listar_eventos' projeto.id %}">Cancelar</a>
+<div class="py-3 text-left">
+    <h1>Criar Evento</h1>
+</div>
+<div class="row">
+    <div class="col-md-8">
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="projeto_id">Projeto:</label>
+                <select name="projeto_id" id="projeto_id" class="form-select" required>
+                    {% for projeto in projetos %}
+                        <option value="{{ projeto.id }}">{{ projeto.titulo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="titulo">Título:</label>
+                <input type="text" name="titulo" id="titulo" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="descricao">Descrição:</label>
+                <textarea name="descricao" id="descricao" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="data">Data:</label>
+                <input type="datetime-local" name="data" id="data" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="{% url 'listar' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 1rem;
+    }
+</style>
 {% endblock %}

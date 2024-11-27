@@ -1,15 +1,17 @@
 # Atividade: Criando um Novo Aplicativo "Eventos"
 
-Vamos criar um aplicativo chamado "eventos", onde será possível gerenciar eventos relacionados aos projetos existentes. Assim, cada projeto poderá ter eventos associados, como reuniões, apresentações ou prazos importantes.
+Este tutorial mostra, passo a passo, como criar um novo aplicativo no Django para gerenciar eventos associados a projetos. Vamos desenvolver o aplicativo "eventos", entender as alterações no código e aprender boas práticas de organização em projetos Django.
 
-# Por que criar um novo aplicativo?
-Em projetos Django, é comum dividir funcionalidades em aplicativos separados para manter o código organizado. O aplicativo "eventos" será responsável por gerenciar eventos, enquanto o aplicativo "projeto" cuida dos projetos institucionais. Isso permite que cada parte do sistema tenha suas próprias views, modelos e templates, facilitando o desenvolvimento e a manutenção.
+## 1. Criar o Aplicativo
+Primeiro, criamos o aplicativo com o comando:
+```cmd
+python manage.py startapp eventos
+```
+### Por que criar um aplicativo separado?
+Criar aplicativos distintos ajuda a manter o código organizado. Assim, "eventos" ficará responsável apenas pela lógica de gerenciamento de eventos, enquanto o aplicativo "projeto" cuidará dos projetos institucionais.
 
-## 1. Criar um Novo Aplicativo
-Execute o comando para criar o novo aplicativo:
-`python manage.py startapp eventos`
-
-Adicione o aplicativo `eventos` em `INSTALLED_APPS` no arquivo `settings.py`:
+## 2. Configurar o Aplicativo no Projeto Django
+Após criar o aplicativo, precisamos informá-lo ao Django. Para isso, adicionamos o aplicativo `eventos` em `INSTALLED_APPS` no arquivo `settings.py`:
 
 ```python
 INSTALLED_APPS = [
@@ -17,11 +19,10 @@ INSTALLED_APPS = [
     'eventos',
 ]
 ```
+Essa configuração garante que o Django reconheça o aplicativo e o inclua no ciclo de carregamento.
 
-## 2. Modelo de Evento
-Crie o modelo para representar os eventos. Cada evento estará relacionado a um projeto.
-
-Em: `eventos/models.py`
+## 3. Criar o Modelo `Evento`
+No arquivo `eventos/models.py`, definimos o modelo `Evento`. Ele representa os eventos no banco de dados, contendo informações como título, descrição, data e a relação com um projeto.
 
 ```python
 from projeto.models import Projeto
@@ -35,19 +36,24 @@ class Evento(models.Model):
     def __str__(self):
         return f"{self.titulo} - {self.projeto.titulo}"
 ```
-Os modelos representam as tabelas do banco de dados. Cada classe no `models.py` será traduzida em uma tabela, com cada atributo da classe se tornando uma coluna.
-O modelo `Evento` tem atributos como `titulo`, `descricao` e `data`, que serão armazenados no banco de dados. O atributo `projeto` cria uma relação entre eventos e projetos, permitindo associar múltiplos eventos a um único projeto.
+### Entendendo o código
+- `titulo`: Nome do evento.
+- `descricao`: Detalhes opcionais sobre o evento.
+- `data`: Quando o evento ocorrerá.
+- `projeto`: Relaciona o evento a um projeto, permitindo buscar eventos de um projeto específico.
 
-### Rode as migrações para atualizar o banco de dados:
+### Atualizar o banco de dados:
+Após criar o modelo, aplicamos as migrações para refletir a mudança no banco de dados:
 ```
 python manage.py makemigrations eventos
 python manage.py migrate
 ```
 
-## 3. Views para Gerenciamento de Eventos
-Em: `eventos/views.py`
+## 4. Criar as Views
+As views controlam o que acontece quando o usuário acessa uma página ou realiza uma ação no aplicativo.
 
 **Listar Eventos:**
+Criamos a view `listar_eventos` para exibir todos os eventos relacionados a um projeto específico:
 ```python
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Evento
@@ -61,12 +67,14 @@ def listar_eventos(request, projeto_id):
 ```
 
 **Criar Evento:**
+A view `criar_evento` processa o formulário para adicionar novos eventos:
 ```python
 from django.http import HttpResponse
 
-def criar_evento(request, projeto_id):
-    projeto = get_object_or_404(Projeto, id=projeto_id)
+def criar_evento(request):
     if request.method == 'POST':
+        projeto_id = request.POST.get('projeto_id') 
+        projeto = get_object_or_404(Projeto, id=projeto_id)
         titulo = request.POST.get('titulo')
         descricao = request.POST.get('descricao')
         data = request.POST.get('data')
@@ -78,27 +86,41 @@ def criar_evento(request, projeto_id):
                 projeto=projeto
             )
             return redirect('listar_eventos', projeto_id=projeto.id)
-    return render(request, 'eventos/form.html', {'projeto': projeto})
-```
-**Selecionar Projeto**
-```python
-def selecionar_projeto(request):
+
     projetos = Projeto.objects.all()
-    if request.method == 'POST':
-        projeto_id = request.POST.get('projeto_id')
-        return redirect('criar_evento', projeto_id=projeto_id)
-    return render(request, 'eventos/selecionar_projeto.html', {'projetos': projetos})
+    return render(request, 'eventos/form.html', {'projetos': projetos})
 ```
 
-As views no Django são responsáveis por processar as requisições do usuário e retornar respostas. Elas são a ponte entre o modelo (dados) e os templates (interface).
-- A view `listar_eventos` busca os eventos do banco de dados e os envia para o template `list.html`, que exibe os dados.
-- A view `criar_evento` lida com o formulário de criação de eventos, salva os dados no banco e redireciona o usuário após o sucesso.
-- A view `selecionar_projeto` implementa a lógica para exibir e processar o formulário de seleção de projeto.
+## 5. Configuração de URLs
+Adicionamos as rotas no arquivo `eventos/urls.py`:
 
-## 4. Templates
+```python
+from django.urls import path
 
-**Listar Eventos**
-Arquivo: `templates/eventos/list.html`
+from . import views 
+
+urlpatterns = [
+    path('<int:projeto_id>/', views.listar_eventos, name='listar_eventos'),
+    path('novo/', views.criar_evento, name='criar_evento'),
+]
+```
+`<int:projeto_id>/`: Exibe uma lista com todos os eventos associados a um projeto específico. 
+`novo/`: Permite que o usuário crie um novo evento para um projeto específico.
+
+**E no arquivo `sgc/urls.py` principal, incluímos as rotas do aplicativo:**
+
+```python
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('projeto/', include('projeto.urls')),  
+    path('eventos/', include('eventos.urls')), 
+]
+```
+
+## 4. Criar os Templates
+
+**Template para Listar Eventos**
+O template `eventos/list.html` exibe os eventos de um projeto:
 
 ```html
 {% extends 'base.html' %}
@@ -113,91 +135,61 @@ Arquivo: `templates/eventos/list.html`
         </li>
     {% endfor %}
 </ul>
-<a href="{% url 'criar_evento' projeto.id %}" class="btn btn-primary">Adicionar Evento</a>
+<a href="{% url 'criar_evento' %}" class="btn btn-primary">Adicionar Evento</a>
 <a href="{% url 'listar' %}">Voltar para Projetos</a>
 {% endblock %}
 ```
 
-**Criar Evento**
-Arquivo: `templates/eventos/form.html`
+**Template para Criar Evento**
+O formulário `eventos/form.html` permite adicionar novos eventos:
 
 ```html
 {% extends 'base.html' %}
-{% block title %}Criar Evento para {{ projeto.titulo }}{% endblock %}
+{% block title %}Criar Evento{% endblock %}
 {% block content %}
-<h1>Criar Evento para "{{ projeto.titulo }}"</h1>
-<form method="post">
-    {% csrf_token %}
-    <label for="titulo">Título:</label>
-    <input type="text" name="titulo" id="titulo" required>
-    <label for="descricao">Descrição:</label>
-    <textarea name="descricao" id="descricao"></textarea>
-    <label for="data">Data:</label>
-    <input type="datetime-local" name="data" id="data" required>
-    <button type="submit" class="btn btn-primary">Salvar</button>
-</form>
-<a href="{% url 'listar_eventos' projeto.id %}">Cancelar</a>
+<div class="py-3 text-left">
+    <h1>Criar Evento</h1>
+</div>
+<div class="row">
+    <div class="col-md-8">
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="projeto_id">Projeto:</label>
+                <select name="projeto_id" id="projeto_id" class="form-select" required>
+                    {% for projeto in projetos %}
+                        <option value="{{ projeto.id }}">{{ projeto.titulo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="titulo">Título:</label>
+                <input type="text" name="titulo" id="titulo" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="descricao">Descrição:</label>
+                <textarea name="descricao" id="descricao" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="data">Data:</label>
+                <input type="datetime-local" name="data" id="data" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="{% url 'listar' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 1rem;
+    }
+</style>
 {% endblock %}
 ```
 
-**Template para Seleção de Projeto**
-Arquivo: `templates/eventos/selecionar_projeto.html`
-```html
-{% extends 'base.html' %}
-{% block title %}Selecionar Projeto{% endblock %}
-{% block content %}
-<h1>Selecionar Projeto</h1>
-<form method="post">
-    {% csrf_token %}
-    <label for="projeto_id">Projeto:</label>
-    <select name="projeto_id" id="projeto_id" required>
-        {% for projeto in projetos %}
-            <option value="{{ projeto.id }}">{{ projeto.titulo }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit">Continuar</button>
-</form>
-{% endblock %}
-
-```
-
-Os templates são arquivos HTML que recebem dados das views para criar a interface do usuário. No Django, podemos usar tags do template engine, como `{% for evento in eventos %}` para iterar sobre os dados recebidos e exibi-los dinamicamente.
-No template `list.html`, usamos `{% extends 'base.html' %}` para herdar o layout geral da aplicação, como o cabeçalho e o rodapé. Os blocos `{% block title %}` e `{% block content %}` permitem que cada página substitua partes específicas do layout base.
-
-## 5. URLs do Aplicativo "Eventos"
-No arquivo `eventos/urls.py`, configure as rotas específicas para o gerenciamento de eventos:
-
-```python
-from django.urls import path
-
-from . import views 
-
-urlpatterns = [
-    path('selecionar/', views.selecionar_projeto, name='selecionar_projeto'),
-    path('<int:projeto_id>/eventos/', views.listar_eventos, name='listar_eventos'),
-    path('<int:projeto_id>/eventos/novo/', views.criar_evento, name='criar_evento'),
-]
-```
-`selecionar/`: Permite que o usuário selecione um projeto a partir de uma lista, antes de realizar ações como criar ou listar eventos.
-`<int:projeto_id>/eventos/`: Exibe uma lista com todos os eventos associados a um projeto específico. 
-`<int:projeto_id>/eventos/novo/`: Permite que o usuário crie um novo evento para um projeto específico.
-
-## 6. Configuração de URLs
-No arquivo de configuração principal `sgc/urls.py`, atualize as rotas para incluir o novo aplicativo "eventos". Isso permitirá que as funcionalidades do novo aplicativo sejam acessíveis a partir das URLs..
-Arquivo `sgc/urls.py` atualizado: 
-
-```python
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('projeto/', include('projeto.urls')),  
-    path('eventos/', include('eventos.urls')), 
-]
-```
-
-## 7. Atualizar o Admin
-Adicione a funcionalidade de gerenciamento de eventos no Django Admin.
-
-Arquivo: `eventos/admin.py`
+## 7. Registrar o Modelo no Admin
+Para facilitar a gestão de eventos durante o desenvolvimento, registramos o modelo no painel administrativo `eventos/admin.py`:
 
 ```python
 from django.contrib import admin
@@ -206,25 +198,19 @@ from .models import Evento
 admin.site.register(Evento)
 ```
 
-O Django Admin é uma ferramenta para gerenciar dados de forma visual. Ao registrar o modelo `Evento`, podemos criar, editar e excluir eventos diretamente no painel administrativo, o que é útil durante o desenvolvimento.
+Ao registrar o modelo `Evento`, podemos criar, editar e excluir eventos diretamente no painel administrativo, o que é útil durante o desenvolvimento.
 
-## 8. Iniciar o servidor:
-- Garanta que todas as dependências estão instaladas: Certifique-se de que o ambiente virtual está ativado e os pacotes necessários estão instalados:
-`pip install -r requirements.txt`
+## 8. Testar e Melhorar
+- Execute o servidor local:
+```cmd
+pip install -r requirements.txt
+```
 
-- Inicie o servidor de desenvolvimento: Execute o comando abaixo para iniciar o servidor local:
-`python manage.py runserver` 
+Acesse as rotas para testar a funcionalidade.O servidor será iniciado no endereço http://127.0.0.1:8000/:
+- http://127.0.0.1:8000/eventos/<projeto_id>/: Lista os eventos de um projeto. 
+- http://127.0.0.1:8000/eventos/novo/: Adiciona um novo evento.
 
-Acesse a aplicação no navegador: O servidor será iniciado no endereço http://127.0.0.1:8000/. A partir daí, você pode navegar pelas rotas configuradas.
-
-Listar Projetos: http://127.0.0.1:8000/projeto/
-
-Listar Eventos de um Projeto: http://127.0.0.1:8000/eventos/<projeto_id>/eventos/
-
-Selecionar projeto para adicionar evento: http://127.0.0.1:8000/eventos/selecionar/
-
-# Tarefas em Aberto
-
-As tarefas em aberto são desafios extras para praticar o que foi aprendido.
-**Editar e excluir eventos:** Criar views e templates para editar e excluir eventos associados aos projetos.
+**Desafios Extras**
+1. Adicionar páginas para editar e excluir eventos.
+2. Melhorar os templates com estilos CSS.
 
